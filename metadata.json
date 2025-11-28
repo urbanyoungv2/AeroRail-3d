@@ -1,0 +1,5 @@
+{
+  "name": "AeroRail 3D",
+  "description": "A futuristic, 3D-enhanced train trip visualizer and planner powered by Gemini. Experience your journey on a holographic globe with real-time distance tracking and immersive station details.",
+  "requestFramePermissions": []
+}
