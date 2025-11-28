@@ -8,19 +8,35 @@ const ai = new GoogleGenAI({ apiKey });
 const stationSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    name: { type: Type.STRING, description: "Name of the train station" },
-    lat: { type: Type.NUMBER, description: "Latitude of the station" },
-    lng: { type: Type.NUMBER, description: "Longitude of the station" },
-    description: { type: Type.STRING, description: "A short, futuristic or historical interesting fact about this location" },
-    arrivalTime: { type: Type.STRING, description: "Estimated arrival time relative to start (e.g., '+2h 30m')" },
-    distanceFromStart: { type: Type.NUMBER, description: "Distance from the origin station in kilometers" },
+    name: { type: Type.STRING, description: "Full name of the railway station" },
+    code: { type: Type.STRING, description: "Official Station Code (e.g. NDLS, CSMT)" },
+    lat: { type: Type.NUMBER, description: "Precise latitude" },
+    lng: { type: Type.NUMBER, description: "Precise longitude" },
+    description: { type: Type.STRING, description: "Brief interesting fact about the city/station" },
+    arrivalTime: { type: Type.STRING, description: "Scheduled Arrival Time (24h format)" },
+    haltTime: { type: Type.STRING, description: "Halt duration (e.g. '5m', '10m')" },
+    platform: { type: Type.STRING, description: "Likely platform number" },
+    distanceFromStart: { type: Type.NUMBER, description: "Distance from origin in KM" },
+    services: { 
+      type: Type.ARRAY, 
+      items: { type: Type.STRING }, 
+      description: "Station amenities (e.g. 'Retiring Room', 'Food Plaza', 'WiFi')" 
+    },
+    operatingHours: { type: Type.STRING, description: "Station active hours" },
+    pointsOfInterest: { 
+      type: Type.ARRAY, 
+      items: { type: Type.STRING },
+      description: "Nearby tourist attractions"
+    }
   },
-  required: ["name", "lat", "lng", "description", "arrivalTime", "distanceFromStart"],
+  required: ["name", "code", "lat", "lng", "description", "arrivalTime", "haltTime", "platform", "distanceFromStart", "services", "operatingHours", "pointsOfInterest"],
 };
 
 const tripSchema: Schema = {
   type: Type.OBJECT,
   properties: {
+    trainName: { type: Type.STRING, description: "Official Train Name (e.g. Vande Bharat Express)" },
+    trainNumber: { type: Type.STRING, description: "Train Number (e.g. 20171)" },
     origin: { type: Type.STRING },
     destination: { type: Type.STRING },
     totalDistanceKm: { type: Type.NUMBER },
@@ -30,22 +46,33 @@ const tripSchema: Schema = {
       items: stationSchema,
     },
   },
-  required: ["origin", "destination", "totalDistanceKm", "estimatedDuration", "stations"],
+  required: ["trainName", "trainNumber", "origin", "destination", "totalDistanceKm", "estimatedDuration", "stations"],
 };
 
-export const generateTrip = async (origin: string, destination: string): Promise<TripSummary> => {
+export const searchTrains = async (query: string, type: 'ROUTE' | 'NUMBER'): Promise<TripSummary> => {
   if (!apiKey) {
     throw new Error("API Key is missing. Please set the API_KEY environment variable.");
   }
 
   const model = "gemini-2.5-flash";
-  const prompt = `
-    Plan a detailed train trip itinerary from ${origin} to ${destination}.
-    Include between 4 to 10 stops (stations) including the start and end.
-    For each station, provide accurate approximate coordinates.
-    The description should be engaging.
-    Calculate cumulative distances.
-  `;
+  
+  let prompt = "";
+  if (type === 'NUMBER') {
+    prompt = `
+      Act as the Indian Railways Official API.
+      Fetch details for Train Number or Name: "${query}".
+      Provide the real-world route, major stations (limit to 12 max for visualization), and schedule.
+      Ensure station coordinates are accurate for mapping on India's geography.
+    `;
+  } else {
+    prompt = `
+      Act as the Indian Railways Official API.
+      Find the best train connection from: "${query}".
+      Select the most popular or fastest train for this route.
+      Provide the real-world route, major stations (limit to 12 max), and schedule.
+      Ensure station coordinates are accurate.
+    `;
+  }
 
   try {
     const response = await ai.models.generateContent({
@@ -54,12 +81,12 @@ export const generateTrip = async (origin: string, destination: string): Promise
       config: {
         responseMimeType: "application/json",
         responseSchema: tripSchema,
-        systemInstruction: "You are an expert travel planner with a focus on railway journeys.",
+        systemInstruction: "You are the central computer for Indian Railways (CRIS). You provide accurate, real-world train schedules, station codes, and route data. You prioritize major junctions and accurate geography.",
       },
     });
 
     const text = response.text;
-    if (!text) throw new Error("No response from Gemini");
+    if (!text) throw new Error("No response from Rail Network");
 
     const data = JSON.parse(text) as TripSummary;
     
@@ -68,7 +95,7 @@ export const generateTrip = async (origin: string, destination: string): Promise
     
     return data;
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw new Error("Failed to generate trip plan. Please try again.");
+    console.error("Rail API Error:", error);
+    throw new Error("Unable to connect to Railway Server. Please verify train details.");
   }
 };

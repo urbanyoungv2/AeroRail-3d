@@ -36,7 +36,7 @@ const StationTimeline: React.FC<StationTimelineProps> = ({ stations, progress })
                     {index < stations.length - 1 && (
                         <div className="absolute top-[9px] left-[50%] w-[calc(100%+2rem)] h-[2px] bg-slate-800 -z-10">
                              <div 
-                                className="h-full bg-cyan-500 transition-all duration-300" 
+                                className="h-full bg-orange-500 transition-all duration-300" 
                                 style={{ width: isPassed ? '100%' : '0%' }}
                              />
                         </div>
@@ -47,20 +47,20 @@ const StationTimeline: React.FC<StationTimelineProps> = ({ stations, progress })
                         initial={false}
                         animate={{ 
                             scale: isNext ? 1.2 : 1,
-                            borderColor: isPassed ? '#0ea5e9' : '#334155',
+                            borderColor: isPassed ? '#f97316' : '#334155', // orange-500
                             backgroundColor: isPassed ? '#0f172a' : '#1e293b'
                         }}
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center z-10 shadow-lg ${isPassed ? 'shadow-cyan-500/50' : ''}`}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center z-10 shadow-lg ${isPassed ? 'shadow-orange-500/50' : ''}`}
                     >
-                        {isPassed && <div className="w-2 h-2 rounded-full bg-cyan-400" />}
+                        {isPassed && <div className="w-2 h-2 rounded-full bg-orange-400" />}
                     </motion.div>
 
                     {/* Content */}
                     <div className="flex flex-col items-center min-w-[120px] text-center">
                         <span className={`text-sm font-display font-bold uppercase ${isPassed ? 'text-white' : 'text-slate-500'}`}>
-                            {station.name}
+                            {station.code}
                         </span>
-                        <span className="text-[10px] font-mono text-cyan-500/70">{station.arrivalTime}</span>
+                        <span className="text-[10px] font-mono text-orange-500/70">{station.arrivalTime}</span>
                     </div>
                 </div>
             );
